@@ -7,9 +7,12 @@ import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
+import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import javax.tools.Diagnostic;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -37,11 +40,6 @@ public class PrefProcessor extends AbstractProcessor {
     }
 
     @Override
-    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-        return false;
-    }
-
-    @Override
     public Set<String> getSupportedAnnotationTypes() {
 
         Set<String> annotations = new LinkedHashSet<>();
@@ -56,5 +54,40 @@ public class PrefProcessor extends AbstractProcessor {
     public SourceVersion getSupportedSourceVersion() {
 
         return SourceVersion.latestSupported();
+    }
+
+    @Override
+    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+
+        for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefClick.class)) {
+
+            if (annotatedElement.getKind() != ElementKind.METHOD) {
+
+                error(annotatedElement, "Only methods can be annotated with @%s", PrefClick.class.getSimpleName());
+                return true;
+            }
+
+            TypeElement typeElement = (TypeElement) annotatedElement;
+            PrefClickAnnotatedMethod annotatedMethod = new PrefClickAnnotatedMethod(typeElement);
+        }
+
+        for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefChanged.class)) {
+
+        }
+
+        for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefBind.class)) {
+
+        }
+
+        return false;
+    }
+
+    private void error(Element element, String message, Object... args) {
+
+        messager.printMessage(
+                Diagnostic.Kind.ERROR,
+                String.format(message, args),
+                element
+        );
     }
 }
