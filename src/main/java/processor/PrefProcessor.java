@@ -7,9 +7,7 @@ import com.google.auto.service.AutoService;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.*;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
@@ -27,6 +25,9 @@ public class PrefProcessor extends AbstractProcessor {
     private Elements elementUtils;
     private Filer filer;
     private Messager messager;
+
+
+    private DataHolder holder = new DataHolder();
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -59,27 +60,67 @@ public class PrefProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 
-        for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefClick.class)) {
+        try {
 
-            if (annotatedElement.getKind() != ElementKind.METHOD) {
+            for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefClick.class)) {
 
-                error(annotatedElement, "Only methods can be annotated with @%s", PrefClick.class.getSimpleName());
-                return true;
+                if (annotatedElement.getKind() != ElementKind.METHOD) {
+
+                    error(annotatedElement, "Only methods can be annotated with @%s", PrefClick.class.getSimpleName());
+                    return true;
+                }
+
+                ExecutableElement executableElement = (ExecutableElement) annotatedElement;
+                ClickMethod clickMethod = new ClickMethod(executableElement);
+                checkValidMethod(clickMethod);
+
+                holder.addClickMethod(clickMethod);
             }
 
-            TypeElement typeElement = (TypeElement) annotatedElement;
-            PrefClickAnnotatedMethod annotatedMethod = new PrefClickAnnotatedMethod(typeElement);
-        }
+            for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefChanged.class)) {
 
-        for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefChanged.class)) {
+            }
 
-        }
+            for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefBind.class)) {
 
-        for (Element annotatedElement : roundEnv.getElementsAnnotatedWith(PrefBind.class)) {
+            }
 
         }
+        catch (ProcessingException e) {
+            error(e.getElement(), e.getMessage());
+        }
+
+
+
+
 
         return false;
+    }
+
+
+    private void checkValidMethod(ClickMethod method) throws ProcessingException {
+
+        ExecutableElement element = method.getAnnotatedMethodElement();
+
+        // Method can't be private
+        if (element.getModifiers().contains(Modifier.PRIVATE)) {
+
+            throw new ProcessingException(
+                    element,
+                    "Method %s is currently private. It needs to be package accessible for @PrefClick to work",
+                    element.getSimpleName().toString()
+            );
+        }
+
+        // Method can't be protected
+        if (element.getModifiers().contains(Modifier.PROTECTED)) {
+
+            throw new ProcessingException(
+                    element,
+                    "Method %s is currently protected. It needs to be package accessible for @PrefClick to work",
+                    element.getSimpleName().toString()
+            );
+        }
     }
 
     private void error(Element element, String message, Object... args) {

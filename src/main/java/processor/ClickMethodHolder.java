@@ -10,14 +10,15 @@ import java.util.Map;
  * Created by matthewarnold on 07/03/2016.
  *
  */
-public class PrefClickGroupedMethods {
+public class ClickMethodHolder {
 
-    private Map<String, PrefClickAnnotatedMethod> items = new LinkedHashMap<>();
+    private String className;
+    private Map<String, ClickMethod> items = new LinkedHashMap<>();
 
-    public void add(PrefClickAnnotatedMethod toAdd) throws PrefAlreadyBoundException {
+    public void add(ClickMethod toAdd) throws ProcessingException {
 
         if (items.containsKey(toAdd.getPrefName())) {
-            throw new PrefAlreadyBoundException(
+            throw new ProcessingException(
                     toAdd.getAnnotatedMethodElement(),
                     "Preference: %s already has a click method bound",
                     toAdd.getPrefName()
